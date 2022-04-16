@@ -126,6 +126,9 @@ class Control
   /// The upper limit of PWM input should match SERVOX_MAX for this channel.
   public: double servo_max = 2000.0;
 
+  /// \brief whether the channel is reversed. -1 - reversed, 1 - not reversed. Default (1)
+  public: int servo_reverse = 1;
+
   /// \brief unused coefficients
   public: double rotorVelocitySlowdownSim;
   public: double frequencyCutoff;
@@ -510,6 +513,11 @@ void ignition::gazebo::systems::ArduPilotPlugin::LoadControlChannels(
             << "channel[" << control.channel
             << "]: <servo_max> not specified, default to "
             << control.servo_max << "\n";
+    }
+
+    if (controlSDF->HasElement("servo_reverse"))
+    {
+      control.servo_reverse = controlSDF->Get<int>("servo_reverse");
     }
 
     control.rotorVelocitySlowdownSim =
@@ -951,7 +959,7 @@ void ignition::gazebo::systems::ArduPilotPlugin::ApplyMotorForces(
       }
       else if (this->dataPtr->controls[i].type == "POSITION")
       {
-        const double posTarget = this->dataPtr->controls[i].cmd;
+        const double posTarget = this->dataPtr->controls[i].servo_reverse * (this->dataPtr->controls[i].cmd);
         ignition::gazebo::components::JointPosition* pComp =
           _ecm.Component<ignition::gazebo::components::JointPosition>(
               this->dataPtr->controls[i].joint);

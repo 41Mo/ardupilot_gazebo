@@ -606,6 +606,7 @@
         <offset>-0.5</offset>
         <servo_min>1100</servo_min>
         <servo_max>1900</servo_max>
+        <servo_reverse>-1</servo_reverse>
         <type>POSITION</type>
         <p_gain>10.0</p_gain>
         <i_gain>0</i_gain>
@@ -630,6 +631,7 @@
         <offset>-0.5</offset>
         <servo_min>1100</servo_min>
         <servo_max>1900</servo_max>
+        <servo_reverse>-1</servo_reverse>
         <type>POSITION</type>
         <p_gain>10.0</p_gain>
         <i_gain>0</i_gain>
