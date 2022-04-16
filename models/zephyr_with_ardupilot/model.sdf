@@ -590,7 +590,7 @@
           SERVO1_FUNCTION   77 (Elevon Left)
           SERVO1_MAX        1900
           SERVO1_MIN        1100
-          SERVO1_REVERSED   0
+          SERVO1_REVERSED   1
           SERVO1_TRIM       1500
 
           pwm:          =>  [1100, 1900] 
@@ -621,7 +621,7 @@
           SERVO2_FUNCTION   78 (Elevon Right)
           SERVO2_MAX        1900
           SERVO2_MIN        1100
-          SERVO2_REVERSED   0
+          SERVO2_REVERSED   1
           SERVO2_TRIM       1500
        -->
       <control channel="1">
