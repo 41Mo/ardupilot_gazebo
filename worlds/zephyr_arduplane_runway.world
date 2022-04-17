@@ -1,5 +1,9 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
+<!--
+  Use command below to attach-"release" parachute
+  ign topic -t "/parachute/attach" -m ignition.msgs.Empty -p "unused: true"
+-->
   <world name="zephyr_arduplane_runway">
     <plugin filename="libignition-gazebo-physics-system.so"
       name="ignition::gazebo::systems::Physics">
@@ -38,11 +42,25 @@
       <uri>model://runway</uri>
     </include>
 
+
     <!-- Zephyr oriented for vertical takeoff -->
     <include>
       <pose>0 0 0.422 -1.5707963 0 1.5707963</pose>
+
       <!-- <pose>0 0 0.07 0 0 1.5707963</pose> -->
       <uri>model://zephyr_with_ardupilot</uri>
+
+      <plugin filename="libParachutePlugin.so" name="ParachutePlugin">
+        <parent_link>wing</parent_link>
+        <child_model>parachute_small</child_model>
+        <child_link>chute</child_link>
+        <detach_topic>/parachute/detach</detach_topic>
+        <attach_topic>/parachute/attach</attach_topic>
+      </plugin>
+    </include>
+    <include>
+      <pose> 1000 0 0  0 0 0 </pose>
+      <uri>model://parachute_small</uri>
     </include>
 
   </world>

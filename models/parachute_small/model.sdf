@@ -31,27 +31,26 @@
         <pose>-0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <mesh>
-            <scale>1 1 1</scale>
-            <uri>model://parachute_small/meshes/parachute_small.dae</uri>
+            <scale>2 2 2</scale>
+            <uri>meshes/parachute_small.dae</uri>
           </mesh>
         </geometry>
       </visual>
       <velocity_decay />
     </link>
 
-    <plugin name="parachute_drag" filename="libLiftDragPlugin.so">
+    <plugin filename="libignition-gazebo-lift-drag-system.so"
+        name="ignition::gazebo::systems::LiftDrag">
       <a0>0</a0>
       <cla>0</cla>
-      <cda>1.114</cda>  <!-- Such that Cd = 1.75 at alpha = 90deg (= upright parachute) -->
-      <cma>0</cma>
+      <cda>1.75</cda>  <!-- Such that Cd = 1.75 at alpha = 90deg (= upright parachute) -->
       <alpha_stall>1.5708</alpha_stall> <!-- = upright parachute -->
       <cla_stall>0</cla_stall>
       <cda_stall>0.01</cda_stall>
-      <cma_stall>0</cma_stall>
       <cp>0 0 1.25</cp>   <!-- About the vertical center of the chute -->
       <area>3</area>   <!-- Area of a circle of diameter 1m = 0.79, 3m2 is for a better visualization -->
-      <air_density>1.2041</air_density>
-      <forward>1 0 0</forward>
+      <air_density>1.204</air_density>
+      <forward>0 0 0</forward>
       <upward>0 0 1</upward>
       <link_name>chute</link_name>
     </plugin>
