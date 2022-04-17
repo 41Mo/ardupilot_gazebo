@@ -11,6 +11,19 @@ project(ardupilot_sitl_gazebo)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(
+  -Wall
+  -Wextra
+  -Wconversion
+  -Wsign-conversion
+  $<$<CONFIG:DEBUG>:-g3>
+  $<$<CONFIG:DEBUG>:-Og>
+  $<$<CONFIG:RELEASE>:-O3>
+)
+
+add_compile_definitions(
+  $<$<CONFIG:DEBUG>:DEBUG>
+)
 #============================================================================
 # Find ignition-cmake
 #============================================================================

@@ -7,7 +7,6 @@
 #include <ignition/gazebo/components/ParentEntity.hh>
 #include <ignition/gazebo/components/Link.hh>
 #include <ignition/gazebo/Util.hh>
-#include <ignition/physics.hh>
 
 using namespace ignition;
 using namespace gazebo;
@@ -15,7 +14,7 @@ using namespace systems;
 void ParachutePlugin::Configure(const Entity &_entity,
                              const std::shared_ptr<const sdf::Element> &_sdf,
                              EntityComponentManager &_ecm,
-                             EventManager &_em)
+                             EventManager &)
 {
   this->model = Model(_entity);
 
@@ -114,7 +113,7 @@ void ParachutePlugin::PreUpdate(
   const ignition::gazebo::UpdateInfo &/*_info*/,
   ignition::gazebo::EntityComponentManager &_ecm)
 {
-  //IGN_PROFILE("ParachutePlugin::PreUpdate");
+  IGN_PROFILE("ParachutePlugin::PreUpdate");
 
   if (this->validConfig && !this->attached && this->should_attach)
   {
