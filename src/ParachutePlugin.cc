@@ -177,7 +177,6 @@ void ParachutePlugin::PreUpdate(
         _ecm,
         pose
       );
-
       auto chute_pos = worldPose(parachute_entity, _ecm);
 
       if (!init_pos_saved) {

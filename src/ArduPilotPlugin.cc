@@ -126,6 +126,11 @@ class Control
   /// The upper limit of PWM input should match SERVOX_MAX for this channel.
   public: double servo_max = 2000.0;
 
+  /// \brief whether the channel is reversed. -1 - reversed, 1 - not reversed. Default (1)
+  public: int servo_reverse = 1;
+
+  public: bool parachute = false;
+
   /// \brief unused coefficients
   public: double rotorVelocitySlowdownSim;
   public: double frequencyCutoff;
@@ -390,6 +395,11 @@ void ignition::gazebo::systems::ArduPilotPlugin::LoadControlChannels(
              << control.channel << "].\n";
     }
 
+    if (controlSDF->HasElement("parachute"))
+    {
+      control.parachute = controlSDF->Get<bool>("parachute");
+    }
+
     if (controlSDF->HasElement("type"))
     {
       control.type = controlSDF->Get<std::string>("type");
@@ -404,7 +414,8 @@ void ignition::gazebo::systems::ArduPilotPlugin::LoadControlChannels(
 
     if (control.type != "VELOCITY" &&
         control.type != "POSITION" &&
-        control.type != "EFFORT")
+        control.type != "EFFORT" &&
+        control.type != "PARACHUTE")
     {
       ignwarn << "[" << this->dataPtr->modelName << "] "
              << "Control type [" << control.type
@@ -418,20 +429,22 @@ void ignition::gazebo::systems::ArduPilotPlugin::LoadControlChannels(
       control.useForce = controlSDF->Get<bool>("useForce");
     }
 
-    if (controlSDF->HasElement("jointName"))
-    {
-      control.jointName = controlSDF->Get<std::string>("jointName");
-    }
-    else
-    {
-      ignerr << "[" << this->dataPtr->modelName << "] "
-            << "Please specify a jointName,"
-            << " where the control channel is attached.\n";
+    if (!control.parachute) {
+      if (controlSDF->HasElement("jointName"))
+      {
+        control.jointName = controlSDF->Get<std::string>("jointName");
+      }
+      else
+      {
+        ignerr << "[" << this->dataPtr->modelName << "] "
+              << "Please specify a jointName,"
+              << " where the control channel is attached.\n";
+      }
     }
 
     // Get the pointer to the joint.
     control.joint = this->dataPtr->model.JointByName(_ecm, control.jointName);
-    if (control.joint == ignition::gazebo::kNullEntity)
+    if (control.joint == ignition::gazebo::kNullEntity && !control.parachute)
     {
       ignerr << "[" << this->dataPtr->modelName << "] "
             << "Couldn't find specified joint ["
@@ -1073,7 +1086,6 @@ bool ignition::gazebo::systems::ArduPilotPlugin::ReceiveServoPacket()
         }
         return false;
     }
-//#define DEBUG_JSON_IO 1
 #if DEBUG_JSON_IO
     // debug: inspect sitl packet
     std::ostringstream oss;
@@ -1173,6 +1185,17 @@ void ignition::gazebo::systems::ArduPilotPlugin::UpdateMotorCommands(const servo
                 const double pwm_max = this->dataPtr->controls[i].servo_max;
                 const double multiplier = this->dataPtr->controls[i].multiplier;
                 const double offset = this->dataPtr->controls[i].offset;
+
+                if (this->dataPtr->controls[i].parachute) {
+                  if (pwm == pwm_max) {
+                    ignition::transport::AdvertiseMessageOptions opts;
+                    std::string topic = "/parachute/attach";
+                    opts.SetMsgsPerSec(1);
+                    auto pub = this->dataPtr->node.Advertise<ignition::msgs::Empty>(topic, opts);
+                    pub.Publish(ignition::msgs::Empty());
+                  }
+                  continue;
+                }
 
                 // bound incoming cmd between 0 and 1
                 double raw_cmd = (pwm - pwm_min)/(pwm_max - pwm_min);
