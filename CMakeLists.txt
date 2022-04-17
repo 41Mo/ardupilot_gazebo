@@ -16,8 +16,8 @@ add_compile_options(
   -Wextra
   -Wconversion
   -Wsign-conversion
-  $<$<CONFIG:DEBUG>:-g3>
-  $<$<CONFIG:DEBUG>:-Og>
+  $<$<CONFIG:DEBUG>:-g>
+  $<$<CONFIG:DEBUG>:-O0>
   $<$<CONFIG:RELEASE>:-O3>
 )
 
