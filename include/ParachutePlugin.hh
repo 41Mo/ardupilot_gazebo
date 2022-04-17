@@ -36,6 +36,8 @@ namespace systems {
 
     //private: math::Pose3d &chute_pos;
 
+    private: std::string world_name;
+
     private: Entity vehicle_modelLink{kNullEntity};
 
     private: Entity parentLinkEntity{kNullEntity};
@@ -45,7 +47,13 @@ namespace systems {
     private: Entity detachableJointEntity{kNullEntity};
 
     private: bool init_pos_saved{false};
+    private: bool parachute_entity_created{false};
     private: math::Pose3d initial_pos{};
+    private: math::Pose3d release_pose{0,0,0,0,0,0};
+
+    private: std::string parentModelName;
+
+    private: std::string parentLinkName;
 
     private: std::string childModelName;
 
@@ -65,6 +73,7 @@ namespace systems {
     private: bool should_attach{false};
     private: bool start{false};
     private: bool model_ok{false};
+
     public: transport::Node node;
 
     private: bool parachute_created{false};

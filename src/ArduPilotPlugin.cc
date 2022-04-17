@@ -1073,20 +1073,20 @@ bool ignition::gazebo::systems::ArduPilotPlugin::ReceiveServoPacket()
         }
         return false;
     }
-
+//#define DEBUG_JSON_IO 1
 #if DEBUG_JSON_IO
     // debug: inspect sitl packet
     std::ostringstream oss;
-    oss << "recv " << recvSize << " bytes from "
-        << this->dataPtr->fcu_address << ":" << this->dataPtr->fcu_port_out << "\n";
+    //oss << "recv " << recvSize << " bytes from "
+    //    << this->dataPtr->fcu_address << ":" << this->dataPtr->fcu_port_out << "\n";
     // oss << "magic: " << pkt.magic << "\n";
     // oss << "frame_rate: " << pkt.frame_rate << "\n";
-    oss << "frame_count: " << pkt.frame_count << "\n";
-    // oss << "pwm: [";
-    // for (auto i=0; i<MAX_SERVO_CHANNELS - 1; ++i) {
-    //     oss << pkt.pwm[i] << ", ";
-    // }
-    // oss << pkt.pwm[MAX_SERVO_CHANNELS - 1] << "]\n";
+    //oss << "frame_count: " << pkt.frame_count << "\n";
+    oss << "pwm: [";
+    for (auto i=0; i<MAX_SERVO_CHANNELS - 1; ++i) {
+        oss << pkt.pwm[i] << ", ";
+    }
+    oss << pkt.pwm[MAX_SERVO_CHANNELS - 1] << "]\n";
     igndbg << "\n" << oss.str();
 #endif
 

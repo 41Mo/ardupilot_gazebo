@@ -6,6 +6,7 @@
 #include <ignition/gazebo/components/Name.hh>
 #include <ignition/gazebo/components/ParentEntity.hh>
 #include <ignition/gazebo/components/Link.hh>
+#include <ignition/gazebo/World.hh>
 #include <ignition/gazebo/Util.hh>
 
 using namespace ignition;
@@ -16,28 +17,37 @@ void ParachutePlugin::Configure(const Entity &_entity,
                              EntityComponentManager &_ecm,
                              EventManager &)
 {
-  this->model = Model(_entity);
 
-  if (!this->model.Valid(_ecm))
+  if (!World(_entity).Valid(_ecm))
   {
-    ignerr << "ParachutePlugin should be attached to a model "
+    ignerr << "ParachutePlugin should be attached to a world "
       << "entity. Failed to initialize." << "\n";
     return;
   }
 
-  igndbg << this->model.Name(_ecm) << std::endl;
+  auto name = World(_entity).Name(_ecm);
+  if (name.has_value()) {
+    igndbg << "World name: " << name.value() << std::endl;
+    this->world_name = name.value();
+  } else {
+    ignerr << "Can't find world name\n";
+    return;
+  }
+
+  if (_sdf->HasElement("parent_model"))
+  {
+    this->parentModelName = _sdf->Get<std::string>("parent_model");
+  }
+  else
+  {
+    ignerr << "'parent_model' is a required parameter for DetachableJoint. "
+              "Failed to initialize.\n";
+    return;
+  }
+
   if (_sdf->HasElement("parent_link"))
   {
-    auto parentLinkName = _sdf->Get<std::string>("parent_link");
-    this->parentLinkEntity = this->model.LinkByName(_ecm, parentLinkName);
-    if (kNullEntity == this->parentLinkEntity)
-    {
-      ignerr << "Link with name " << parentLinkName
-             << " not found in model " << this->model.Name(_ecm)
-             << ". Make sure the parameter 'parent_link' has the "
-             << "correct value. Failed to initialize.\n";
-      return;
-    }
+    this->parentLinkName = _sdf->Get<std::string>("parent_link");
   }
   else
   {
@@ -68,13 +78,20 @@ void ParachutePlugin::Configure(const Entity &_entity,
     return;
   }
 
+  if (_sdf->HasElement("release_pose"))
+  {
+    this->release_pose = _sdf->Get<math::Pose3d>("release_pose");
+    igndbg << "Release Pos: " << this->release_pose.Pos() << std::endl;
+    igndbg << "Release Rot: " << this->release_pose.Rot() << std::endl;
+  }
+
   std::vector<std::string> topics;
   // detach topic configure
   if (_sdf->HasElement("detach_topic"))
   {
     topics.push_back(_sdf->Get<std::string>("detach_topic"));
   }
-  topics.push_back("/model/" + this->model.Name(_ecm) +
+  topics.push_back("/model/" + this->parentModelName +
       "/detachable_joint/detach");
   this->detach_topic = validTopic(topics);
 
@@ -85,7 +102,7 @@ void ParachutePlugin::Configure(const Entity &_entity,
   {
     topics1.push_back(_sdf->Get<std::string>("attach_topic"));
   }
-  topics1.push_back("/model/" + this->model.Name(_ecm) +
+  topics1.push_back("/model/" + this->parentModelName +
       "/detachable_joint/attach");
   this->attach_topic = validTopic(topics1);
 
@@ -96,13 +113,13 @@ void ParachutePlugin::Configure(const Entity &_entity,
   this->node.Subscribe(
       this->detach_topic, &ParachutePlugin::OnDetachRequest, this);
 
-  ignmsg << "ParachutePlugin subscribing to messages on "
+  igndbg << "ParachutePlugin subscribing to messages on "
          << "[" << this->detach_topic << "]" << std::endl;
 
   this->node.Subscribe(
       this->attach_topic, &ParachutePlugin::OnAttachRequest, this);
 
-  ignmsg << "ParachutePlugin subscribing to messages on "
+  igndbg << "ParachutePlugin subscribing to messages on "
          << "[" << this->attach_topic << "]" << std::endl;
 
   this->node.Subscribe("/parachute/start", &ParachutePlugin::OnStartRequest, this);
@@ -114,35 +131,47 @@ void ParachutePlugin::PreUpdate(
   ignition::gazebo::EntityComponentManager &_ecm)
 {
   IGN_PROFILE("ParachutePlugin::PreUpdate");
-
   if (this->validConfig && !this->attached && this->should_attach)
   {
-
+    bool result;
+    msgs::EntityFactory req;
+    msgs::Boolean res;
+    req.set_sdf_filename(this->childModelName);
+    bool executed = this->node.Request("world/"+this->world_name+"/create",
+            req, 5000, res, result);
+    if (executed) {
+      if (result) {
+        igndbg << "Parachute model created\n";
+      } else {
+        ignerr << "Can't create parachute model\n";
+        this->should_attach = false;
+      }
+    } else {
+        igndbg << "Parachute model creation time out\n";
+    }
     Entity parachute_entity{kNullEntity};
-    if ("__model__" == this->childModelName)
-    {
-      parachute_entity = this->model.Entity();
-    }
-    else
-    {
-      parachute_entity = _ecm.EntityByComponents(
-          components::Model(), components::Name(this->childModelName));
-    }
+    parachute_entity = _ecm.EntityByComponents(
+        components::Model(), components::Name(this->childModelName));
+    Entity vehicle_entity{kNullEntity};
+    vehicle_entity = _ecm.EntityByComponents(
+        components::Model(), components::Name(this->parentModelName));
 
-    if (kNullEntity != parachute_entity)
+    if (kNullEntity != parachute_entity && kNullEntity != vehicle_entity)
     {
       this->childLinkEntity = _ecm.EntityByComponents(
           components::Link(), components::ParentEntity(parachute_entity),
           components::Name(this->childLinkName));
+      this->parentLinkEntity = _ecm.EntityByComponents(
+          components::Link(), components::ParentEntity(vehicle_entity),
+          components::Name(this->parentLinkName));
 
-      math::Quaterniond rpy{0, 2.35, 0};
-      math::Vector3d xyz{0, -0.12, 0};
-      auto rot = worldPose(this->model.Entity(), _ecm).CoordRotationSub(rpy);
-      auto pos = worldPose(this->model.Entity(), _ecm).CoordPositionAdd(xyz);
+      auto rot = worldPose(vehicle_entity, _ecm).CoordRotationSub(this->release_pose.Rot());
+      auto pos = worldPose(vehicle_entity, _ecm).CoordPositionAdd(this->release_pose.Pos());
       math::Pose3d pose{
         pos,
         rot,
       };
+
       auto parachute_model = Model(parachute_entity);
       parachute_model.SetWorldPoseCmd(
         _ecm,
@@ -161,7 +190,7 @@ void ParachutePlugin::PreUpdate(
         model_ok = true;
       }
 
-      if (kNullEntity != this->childLinkEntity && model_ok)
+      if (kNullEntity != this->childLinkEntity && model_ok && kNullEntity != this->parentLinkEntity)
       {
 
         // Attach the models
