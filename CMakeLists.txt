@@ -47,3 +47,16 @@ target_include_directories(ArduPilotPlugin PUBLIC
 target_link_libraries(ArduPilotPlugin PUBLIC
   ${IGNITION-GAZEBO_LIBRARIES}
 )
+
+add_library(ParachutePlugin
+  SHARED
+  src/ParachutePlugin.cc
+)
+target_include_directories(ParachutePlugin PUBLIC
+  include
+	${IGNITION-GAZEBO_INCLUDE_DIRS}
+)
+
+target_link_libraries(ParachutePlugin PUBLIC
+  ${IGNITION-GAZEBO_LIBRARIES}
+)
